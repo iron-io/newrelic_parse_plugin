@@ -1,0 +1,16 @@
+newrelic:
+  license: ''
+  guid: 'io.iron.parse_agent'
+  version: '1' # bump this everytime you upload a changed worker
+
+iron:
+  token: 'Iron.io Token'
+  project_id: 'Iron.io Project ID'
+
+parse:
+  api_key: 'Parse API Key'
+  app_id: 'Parse Application ID'
+
+# Set `test_mode` to true for random Parse's data generation.
+# This is for debug purposes only!
+test_mode: false

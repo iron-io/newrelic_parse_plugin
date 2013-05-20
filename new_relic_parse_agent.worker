@@ -1,0 +1,10 @@
+runtime 'ruby'
+exec 'parse_agent.rb'
+name 'Parse Agent (New Relic)'
+
+# uncomment when newrelic-platform gem will be public
+# gem_file 'Gemfile'
+
+gem 'newrelic_platform'
+gem 'parse-ruby-client'
+gem 'iron_cache'
