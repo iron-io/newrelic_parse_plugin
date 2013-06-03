@@ -21,8 +21,11 @@ Parse.init(:api_key => config['parse']['api_key'],
                                   :version => config['newrelic']['version'])
 
 # Configure IronCache client
-ic = IronCache::Client.new(config['iron'])
-@cache = ic.cache("newrelic-parse-agent")
+begin
+  @cache = IronCache::Client.new(config['iron']).cache("newrelic-parse-agent")
+rescue Exception => err
+  abort 'Iron.io credentials are wrong.'
+end
 
 # Helpers
 
@@ -64,13 +67,22 @@ end
 def users_count(from = nil, thru = nil)
   query = Parse::Query.new('_User')
   if from
-    query = query.greater_than('CreatedAt', from)
+    query = query.greater_than('CreatedAt', from.to_i)
   end
   if thru
-    query = query.less_eq('CreatedAt', thru)
+    query = query.less_eq('CreatedAt', thru.to_i)
   end
 
-  query.count.get
+  begin
+    query.count.get.count
+  rescue Exception => err
+    if err.message =~ /unauthorized/
+      abort 'Seems Parse credentials are wrong.'
+    else
+      abort("Error happened while getting data from Parse. " +
+            "Error message: '#{err.message}'.")
+    end
+  end
 end
 
 def cached_total_users(count = nil)
@@ -81,14 +93,16 @@ def cached_total_users(count = nil)
   elsif @cached_total_users.nil?
     item = @cache.get 'previously_total_users_count'
 
-    @cahced_total_users = if item
+    @cached_total_users = if item && !item.value.nil?
                             item.value
                           elsif @test_mode # first test_mode launch
                             0
                           else # first normal launch
                             users_count(nil, processed_at)
-                          end
+                          end.to_i
   end
+
+  @cached_total_users
 end
 
 # Processing
@@ -120,8 +134,18 @@ component.add_metric('Users/Total', 'users', users[:total])
 
 component.options[:duration] = duration(processed_at, up_to)
 
-# Submit data to New Relic
-collector.submit
+begin
+  # Submit data to New Relic
+  collector.submit
+rescue Exception => err
+  #restore_stderr
+  if err.message.downcase =~ /http 403/
+    abort "Seems New Relic's license key is wrong."
+  else
+    abort("Error happened while sending data to New Relic. " +
+          "Error message: '#{err.message}'.")
+  end
+end
 
 # Update cached data
 processed_at up_to
