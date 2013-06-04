@@ -28,6 +28,14 @@ rescue Exception => err
 end
 
 # Helpers
+def stderr_to_stdout
+  $stderr_backup = $stderr unless $stderr_backup
+  $stderr = $stdout
+end
+
+def restore_stderr
+  $stderr = $stderr_backup if $stderr_backup
+end
 
 def duration(from, to)
   dur = from ? (to - from).to_i : 3600
@@ -76,6 +84,7 @@ def users_count(from = nil, thru = nil)
   begin
     query.count.get.count
   rescue Exception => err
+    restore_stderr
     if err.message =~ /unauthorized/
       abort 'Seems Parse credentials are wrong.'
     else
@@ -106,6 +115,7 @@ def cached_total_users(count = nil)
 end
 
 # Processing
+stderr_to_stdout
 
 users = {}
 if @test_mode
@@ -138,7 +148,7 @@ begin
   # Submit data to New Relic
   collector.submit
 rescue Exception => err
-  #restore_stderr
+  restore_stderr
   if err.message.downcase =~ /http 403/
     abort "Seems New Relic's license key is wrong."
   else
