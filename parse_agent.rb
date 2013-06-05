@@ -13,7 +13,8 @@ require 'newrelic_platform'
 @test_mode = config['test_mode']
 
 Parse.init(:api_key => config['parse']['api_key'],
-           :application_id => config['parse']['app_id'])
+           :application_id => config['parse']['app_id'],
+           :logger => Logger.new(STDOUT).tap{|l| l.level = Logger::INFO})
 
 # Configure NewRelic client
 @new_relic = NewRelic::Client.new(:license => config['newrelic']['license'],
